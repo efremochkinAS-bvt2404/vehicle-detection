@@ -1,0 +1,23 @@
+model:
+  name: faster_rcnn
+  display_name: Faster R-CNN
+  framework: torchvision
+  architecture: fasterrcnn_resnet50_fpn_v2
+  pretrained: true
+
+training:
+  epochs: 1
+  batch_size: 2
+  image_size: 640
+  workers: 2
+  device: 0
+  learning_rate: 0.0005
+  weight_decay: 0.0005
+
+augmentation:
+  horizontal_flip: true
+  color_jitter: true
+  random_crop: false
+
+results:
+  experiment_prefix: faster_rcnn

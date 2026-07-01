@@ -68,6 +68,7 @@ TEST_SPLIT_PATH = SPLITS_DIR / "test.txt"
 
 METADATA_DIR = PROCESSED_DATA_DIR / "metadata"
 SPLIT_CONFIG_PATH = METADATA_DIR / "split_config.json"
+PREPARATION_STATUS_PATH = METADATA_DIR / "preparation_status.json"
 
 
 # =============================================================================

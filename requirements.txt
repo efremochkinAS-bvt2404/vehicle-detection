@@ -1,0 +1,6 @@
+PyYAML
+Pillow
+matplotlib
+torch
+torchvision
+ultralytics

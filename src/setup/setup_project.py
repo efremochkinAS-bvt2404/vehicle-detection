@@ -1,6 +1,5 @@
-from src.dataset.pipeline.prepare_dataset import prepare_dataset
+from src.dataset.pipeline.status import ensure_dataset_prepared
 from src.utils.checkpoints import ensure_yolo_checkpoint
-from src.utils.paths import YOLO_DATA_YAML_PATH
 
 
 def setup_project(verbose=True):
@@ -8,16 +7,7 @@ def setup_project(verbose=True):
         print("Project setup started")
         print()
 
-    if not YOLO_DATA_YAML_PATH.exists():
-        if verbose:
-            print("YOLO dataset not found")
-            print("Preparing dataset...")
-            print()
-
-        prepare_dataset()
-    else:
-        if verbose:
-            print("YOLO dataset found")
+    dataset_status = ensure_dataset_prepared(verbose=verbose)
 
     checkpoint_path = ensure_yolo_checkpoint()
 
@@ -27,7 +17,7 @@ def setup_project(verbose=True):
         print("Project setup completed successfully")
 
     return {
-        "yolo_data_yaml": YOLO_DATA_YAML_PATH,
+        "dataset": dataset_status,
         "yolo_checkpoint": checkpoint_path,
     }
 

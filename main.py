@@ -1,48 +1,124 @@
 import argparse
+import sys
 
-from src.dataset.pipeline.prepare_dataset import prepare_dataset
-from src.setup.setup_project import setup_project
-from src.training.train_yolo import train_yolo
+
+MODEL_NAMES = ["detr", "faster_rcnn", "retinanet", "ssd", "yolo"]
+
+
+def train_model(model_name):
+    if model_name == "yolo":
+        from src.training.train_yolo import train_yolo
+
+        return train_yolo()
+
+    raise NotImplementedError(
+        f"Training for model '{model_name}' is not implemented yet"
+    )
+
+
+def evaluate_model(model_name):
+    if model_name == "yolo":
+        from src.evaluation.yolo import evaluate_yolo
+
+        return evaluate_yolo()
+
+    raise NotImplementedError(
+        f"Evaluation for model '{model_name}' is not implemented yet"
+    )
+
+
+def compare_models():
+    raise NotImplementedError("Model comparison is not implemented yet")
+
+
+def clear_generated_data(keep_pretrained=True):
+    from src.utils.cleanup import clear_generated_data as run_clear
+
+    return run_clear(keep_pretrained=keep_pretrained)
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Emergency Vehicle Detection"
+        description="Vehicle detection on KITTI"
     )
 
-    parser.add_argument(
-        "--setup",
+    subparsers = parser.add_subparsers(dest="command")
+
+    setup_parser = subparsers.add_parser(
+        "setup",
+        help="Prepare project directories",
+    )
+    setup_parser.set_defaults(handler=lambda args: run_setup())
+
+    prepare_parser = subparsers.add_parser(
+        "prepare-dataset",
+        help="Prepare KITTI dataset",
+    )
+    prepare_parser.add_argument(
+        "--force",
         action="store_true",
-        help="Prepare project for training",
+        help="Rebuild processed dataset even if it is already prepared",
     )
+    prepare_parser.set_defaults(handler=lambda args: run_prepare_dataset(args.force))
 
-    parser.add_argument(
-        "--prepare-dataset",
-        action="store_true",
-        help="Prepare dataset",
-    )
-
-    parser.add_argument(
-        "--train",
-        choices=["yolo"],
+    train_parser = subparsers.add_parser(
+        "train",
         help="Train selected model",
+    )
+    train_parser.add_argument("--model", required=True, choices=MODEL_NAMES)
+    train_parser.set_defaults(handler=lambda args: train_model(args.model))
+
+    evaluate_parser = subparsers.add_parser(
+        "evaluate",
+        help="Evaluate selected model",
+    )
+    evaluate_parser.add_argument("--model", required=True, choices=MODEL_NAMES)
+    evaluate_parser.set_defaults(handler=lambda args: evaluate_model(args.model))
+
+    compare_parser = subparsers.add_parser(
+        "compare",
+        help="Compare completed model experiments",
+    )
+    compare_parser.set_defaults(handler=lambda args: compare_models())
+
+    clear_parser = subparsers.add_parser(
+        "clear",
+        help="Remove generated data and results except data/raw",
+    )
+    clear_parser.add_argument(
+        "--remove-pretrained",
+        action="store_true",
+        help="Also remove pretrained checkpoints from results/checkpoints/pretrained",
+    )
+    clear_parser.set_defaults(
+        handler=lambda args: clear_generated_data(
+            keep_pretrained=not args.remove_pretrained,
+        )
     )
 
     args = parser.parse_args()
 
-    if args.setup:
-        setup_project()
+    if not hasattr(args, "handler"):
+        parser.print_help()
         return
 
-    if args.prepare_dataset:
-        prepare_dataset()
-        return
+    try:
+        args.handler(args)
+    except NotImplementedError as error:
+        print(error)
+        sys.exit(1)
 
-    if args.train == "yolo":
-        train_yolo()
-        return
 
-    parser.print_help()
+def run_setup():
+    from src.setup.setup_project import setup_project
+
+    setup_project()
+
+
+def run_prepare_dataset(force=False):
+    from src.dataset.pipeline.prepare_dataset import prepare_dataset
+
+    prepare_dataset(force=force)
 
 
 if __name__ == "__main__":

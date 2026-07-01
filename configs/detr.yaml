@@ -1,0 +1,23 @@
+model:
+  name: detr
+  display_name: DETR
+  framework: torch
+  architecture: detr_resnet50
+  pretrained: true
+
+training:
+  epochs: 1
+  batch_size: 2
+  image_size: 640
+  workers: 2
+  device: 0
+  learning_rate: 0.0001
+  weight_decay: 0.0001
+
+augmentation:
+  horizontal_flip: true
+  color_jitter: true
+  random_crop: false
+
+results:
+  experiment_prefix: detr

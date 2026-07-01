@@ -1,0 +1,23 @@
+model:
+  name: ssd
+  display_name: SSD
+  framework: torchvision
+  architecture: ssdlite320_mobilenet_v3_large
+  pretrained: true
+
+training:
+  epochs: 1
+  batch_size: 4
+  image_size: 320
+  workers: 2
+  device: 0
+  learning_rate: 0.001
+  weight_decay: 0.0005
+
+augmentation:
+  horizontal_flip: true
+  color_jitter: true
+  random_crop: false
+
+results:
+  experiment_prefix: ssd

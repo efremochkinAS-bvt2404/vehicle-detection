@@ -1,5 +1,9 @@
 dataset:
   name: KITTI
+  raw_dir: data/raw/KITTI
+  processed_dir: data/processed
+  images_dir: image_2
+  labels_dir: label_2
 
 classes:
   keep:
@@ -31,5 +35,32 @@ split:
   train: 0.7
   val: 0.2
   test: 0.1
+
+preprocessing:
+  image_size: 640
+  normalize:
+    mean: [0.485, 0.456, 0.406]
+    std: [0.229, 0.224, 0.225]
+
+augmentation:
+  horizontal_flip: true
+  color_jitter: true
+  random_crop: false
+
+evaluation:
+  metrics:
+    - map
+    - map50
+    - map50_95
+    - precision
+    - recall
+    - f1
+  prediction_images: 20
+  confidence_threshold: 0.25
+
+results:
+  root_dir: results
+  experiments_dir: results/experiments
+  comparison_dir: results/comparison
 
 random_seed: 42
