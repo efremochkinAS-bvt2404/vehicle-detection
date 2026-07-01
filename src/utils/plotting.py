@@ -6,8 +6,8 @@ PLOT_SPECS = {
     "loss.png": {
         "title": "Loss",
         "series": {
-            "train loss": ["train/box_loss", "train/cls_loss", "train/dfl_loss"],
-            "validation loss": ["val/box_loss", "val/cls_loss", "val/dfl_loss"],
+            "train loss": ["train/box_loss", "train/cls_loss", "train/dfl_loss", "train_loss"],
+            "validation loss": ["val/box_loss", "val/cls_loss", "val/dfl_loss", "val_loss"],
         },
     },
     "precision.png": {

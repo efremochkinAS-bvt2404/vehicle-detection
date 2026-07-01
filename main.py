@@ -11,6 +11,11 @@ def train_model(model_name):
 
         return train_yolo()
 
+    if model_name == "faster_rcnn":
+        from src.training.train_faster_rcnn import train_faster_rcnn
+
+        return train_faster_rcnn()
+
     raise NotImplementedError(
         f"Training for model '{model_name}' is not implemented yet"
     )
@@ -21,6 +26,11 @@ def evaluate_model(model_name):
         from src.evaluation.yolo import evaluate_yolo
 
         return evaluate_yolo()
+
+    if model_name == "faster_rcnn":
+        from src.evaluation.faster_rcnn import evaluate_faster_rcnn
+
+        return evaluate_faster_rcnn()
 
     raise NotImplementedError(
         f"Evaluation for model '{model_name}' is not implemented yet"

@@ -8,7 +8,7 @@ from src.utils.paths import (
     TEST_MANIFEST_PATH,
     YOLO_DATA_YAML_PATH,
 )
-from src.utils.experiment_manager import clean_experiment_artifacts
+from src.utils.experiment_manager import clean_experiment_artifacts, relative_path
 from src.utils.plotting import plot_training_history
 
 
@@ -88,7 +88,7 @@ def _build_metrics(results, run_name, experiment_dir):
             "recall": recall,
             "f1": f1_score,
         },
-        "experiment_dir": str(experiment_dir),
+        "experiment_dir": relative_path(experiment_dir),
     }
 
 
@@ -253,7 +253,7 @@ def evaluate_yolo(experiment_dir=None, verbose=True):
     )
 
     metrics["predictions"]["saved_images"] = len(prediction_paths)
-    metrics["plots"] = [str(path) for path in plots]
+    metrics["plots"] = [relative_path(path) for path in plots]
 
     metrics_path = save_json(experiment_dir / "metrics.json", metrics)
     clean_experiment_artifacts(experiment_dir)

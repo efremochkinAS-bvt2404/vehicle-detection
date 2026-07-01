@@ -10,6 +10,15 @@ import yaml
 from src.utils.paths import EXPERIMENTS_DIR, EXPERIMENTS_REGISTRY_PATH
 
 
+def relative_path(path):
+    path = Path(path)
+
+    try:
+        return path.relative_to(Path.cwd()).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 REGISTRY_COLUMNS = [
     "model",
     "run_name",
@@ -178,12 +187,12 @@ def register_experiment(experiment, row):
             "model": experiment.model_name,
             "run_name": experiment.run_name,
             "created_at": experiment.created_at,
-            "experiment_dir": str(experiment.root_dir),
-            "config_yaml": str(experiment.config_path),
-            "history_csv": str(experiment.history_path)
+            "experiment_dir": relative_path(experiment.root_dir),
+            "config_yaml": relative_path(experiment.config_path),
+            "history_csv": relative_path(experiment.history_path)
             if experiment.history_path.exists()
             else "",
-            "metrics_json": str(experiment.metrics_path)
+            "metrics_json": relative_path(experiment.metrics_path)
             if experiment.metrics_path.exists()
             else "",
             **row,

@@ -6,13 +6,18 @@ model:
   pretrained: true
 
 training:
-  epochs: 1
+  epochs: 8
   batch_size: 2
   image_size: 640
   workers: 2
   device: 0
   learning_rate: 0.0005
   weight_decay: 0.0005
+  seed: 42
+  deterministic: true
+  max_train_batches: null
+  max_val_batches: null
+  max_test_batches: null
 
 augmentation:
   horizontal_flip: true

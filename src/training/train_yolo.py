@@ -14,6 +14,7 @@ from src.utils.experiment_manager import (
     register_experiment,
     save_experiment_info,
     save_metrics,
+    relative_path,
 )
 from src.utils.paths import (
     YOLO_DATA_YAML_PATH,
@@ -144,15 +145,15 @@ def train_yolo(verbose=True):
         "seed": seed,
         "deterministic": deterministic,
         "config": config,
-        "pretrained_checkpoint": str(checkpoint_path),
-        "data_yaml": str(YOLO_DATA_YAML_PATH),
-        "experiment_dir": str(experiment_dir),
-        "best_checkpoint": str(best_checkpoint),
-        "last_checkpoint": str(last_checkpoint) if last_checkpoint else "",
-        "history_csv": str(history_path) if history_path else "",
-        "metrics_json": str(metrics_path),
-        "config_yaml": str(experiment.config_path),
-        "plots": [str(path) for path in generated_plots],
+        "pretrained_checkpoint": relative_path(checkpoint_path),
+        "data_yaml": relative_path(YOLO_DATA_YAML_PATH),
+        "experiment_dir": relative_path(experiment_dir),
+        "best_checkpoint": relative_path(best_checkpoint),
+        "last_checkpoint": relative_path(last_checkpoint) if last_checkpoint else "",
+        "history_csv": relative_path(history_path) if history_path else "",
+        "metrics_json": relative_path(metrics_path),
+        "config_yaml": relative_path(experiment.config_path),
+        "plots": [relative_path(path) for path in generated_plots],
     }
 
     info_path = save_experiment_info(experiment_dir, info)
@@ -168,8 +169,8 @@ def train_yolo(verbose=True):
             "device": device,
             "seed": seed,
             "deterministic": deterministic,
-            "best_checkpoint": str(best_checkpoint),
-            "last_checkpoint": str(last_checkpoint) if last_checkpoint else "",
+            "best_checkpoint": relative_path(best_checkpoint),
+            "last_checkpoint": relative_path(last_checkpoint) if last_checkpoint else "",
         },
     )
 

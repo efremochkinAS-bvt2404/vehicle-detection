@@ -15,25 +15,37 @@ def create_detection_dataloaders(
     batch_size=4,
     num_workers=2,
     shuffle_train=True,
+    augmentation_config=None,
+    label_offset=1,
 ):
-    transforms = get_detection_transforms()
+    train_transforms = get_detection_transforms(
+        augmentation_config=augmentation_config,
+        train=True,
+    )
+    eval_transforms = get_detection_transforms(
+        augmentation_config=augmentation_config,
+        train=False,
+    )
 
     train_dataset = DetectionDataset(
         manifest_file=TRAIN_MANIFEST_PATH,
         images_dir=FILTERED_IMAGES_DIR,
-        transforms=transforms,
+        transforms=train_transforms,
+        label_offset=label_offset,
     )
 
     val_dataset = DetectionDataset(
         manifest_file=VAL_MANIFEST_PATH,
         images_dir=FILTERED_IMAGES_DIR,
-        transforms=transforms,
+        transforms=eval_transforms,
+        label_offset=label_offset,
     )
 
     test_dataset = DetectionDataset(
         manifest_file=TEST_MANIFEST_PATH,
         images_dir=FILTERED_IMAGES_DIR,
-        transforms=transforms,
+        transforms=eval_transforms,
+        label_offset=label_offset,
     )
 
     train_loader = DataLoader(
