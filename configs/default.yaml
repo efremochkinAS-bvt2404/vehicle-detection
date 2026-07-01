@@ -1,0 +1,35 @@
+dataset:
+  name: KITTI
+
+classes:
+  keep:
+    - Car
+    - Van
+    - Truck
+    - Tram
+    - Cyclist
+
+  labels_ru:
+    Car: Автомобиль
+    Van: Фургон
+    Truck: Грузовик
+    Tram: Трамвай
+    Pedestrian: Пешеход
+    Person_sitting: Сидящий человек
+    Cyclist: Велосипедист
+    Misc: Прочее
+    DontCare: Игнорируемая область
+
+  colors:
+    Car: [0, 255, 0]
+    Van: [255, 165, 0]
+    Truck: [255, 0, 0]
+    Tram: [0, 0, 255]
+    Cyclist: [255, 0, 255]
+
+split:
+  train: 0.7
+  val: 0.2
+  test: 0.1
+
+random_seed: 42

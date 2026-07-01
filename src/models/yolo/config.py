@@ -1,0 +1,10 @@
+MODEL_NAME = "yolo11n.pt"
+
+EPOCHS = 1
+IMAGE_SIZE = 640
+BATCH_SIZE = 8
+WORKERS = 2
+DEVICE = 0
+
+PROJECT_NAME = "yolo"
+RUN_NAME = "test_run"
