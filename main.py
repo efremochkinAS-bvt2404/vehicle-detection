@@ -16,6 +16,11 @@ def train_model(model_name):
 
         return train_faster_rcnn()
 
+    if model_name == "detr":
+        from src.training.train_detr import train_detr
+
+        return train_detr()
+
     raise NotImplementedError(
         f"Training for model '{model_name}' is not implemented yet"
     )
@@ -31,6 +36,11 @@ def evaluate_model(model_name):
         from src.evaluation.faster_rcnn import evaluate_faster_rcnn
 
         return evaluate_faster_rcnn()
+
+    if model_name == "detr":
+        from src.evaluation.detr import evaluate_detr
+
+        return evaluate_detr()
 
     raise NotImplementedError(
         f"Evaluation for model '{model_name}' is not implemented yet"

@@ -4,3 +4,6 @@ matplotlib
 torch
 torchvision
 ultralytics
+transformers
+timm
+scipy

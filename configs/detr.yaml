@@ -1,18 +1,25 @@
 model:
   name: detr
   display_name: DETR
-  framework: torch
-  architecture: detr_resnet50
+  framework: transformers
+  architecture: facebook/detr-resnet-50
   pretrained: true
 
 training:
-  epochs: 1
+  epochs: 8
   batch_size: 2
   image_size: 640
   workers: 2
   device: 0
-  learning_rate: 0.0001
+  learning_rate: 0.00005
+  backbone_learning_rate: 0.00001
   weight_decay: 0.0001
+  gradient_clip_norm: 0.1
+  seed: 42
+  deterministic: true
+  max_train_batches: null
+  max_val_batches: null
+  max_test_batches: null
 
 augmentation:
   horizontal_flip: true
