@@ -21,6 +21,11 @@ def train_model(model_name):
 
         return train_detr()
 
+    if model_name == "retinanet":
+        from src.training.train_retinanet import train_retinanet
+
+        return train_retinanet()
+
     raise NotImplementedError(
         f"Training for model '{model_name}' is not implemented yet"
     )
@@ -41,6 +46,11 @@ def evaluate_model(model_name):
         from src.evaluation.detr import evaluate_detr
 
         return evaluate_detr()
+
+    if model_name == "retinanet":
+        from src.evaluation.retinanet import evaluate_retinanet
+
+        return evaluate_retinanet()
 
     raise NotImplementedError(
         f"Evaluation for model '{model_name}' is not implemented yet"
