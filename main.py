@@ -68,7 +68,15 @@ def evaluate_model(model_name):
 
 
 def compare_models():
-    raise NotImplementedError("Model comparison is not implemented yet")
+    from src.comparison.compare_models import compare_models as run_compare
+
+    return run_compare()
+
+
+def compare_model_runs(model_name):
+    from src.comparison.compare_models import compare_model_runs as run_compare
+
+    return run_compare(model_name)
 
 
 def clear_generated_data(keep_pretrained=True):
@@ -120,6 +128,15 @@ def main():
         help="Compare completed model experiments",
     )
     compare_parser.set_defaults(handler=lambda args: compare_models())
+
+    compare_runs_parser = subparsers.add_parser(
+        "compare-runs",
+        help="Compare evaluated runs for one model",
+    )
+    compare_runs_parser.add_argument("--model", required=True, choices=MODEL_NAMES)
+    compare_runs_parser.set_defaults(
+        handler=lambda args: compare_model_runs(args.model)
+    )
 
     clear_parser = subparsers.add_parser(
         "clear",
