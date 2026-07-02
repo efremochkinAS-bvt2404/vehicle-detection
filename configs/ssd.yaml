@@ -6,18 +6,26 @@ model:
   pretrained: true
 
 training:
-  epochs: 1
-  batch_size: 4
+  epochs: 8
+  batch_size: 2
   image_size: 320
   workers: 2
   device: 0
   learning_rate: 0.001
   weight_decay: 0.0005
+  seed: 42
+  deterministic: true
+  max_train_batches: null
+  max_val_batches: null
+  max_test_batches: null
 
 augmentation:
   horizontal_flip: true
   color_jitter: true
   random_crop: false
+
+evaluation:
+  visualization_confidence_threshold: 0.5
 
 results:
   experiment_prefix: ssd

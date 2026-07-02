@@ -17,6 +17,7 @@ def create_detection_dataloaders(
     shuffle_train=True,
     augmentation_config=None,
     label_offset=1,
+    drop_last_train=False,
 ):
     train_transforms = get_detection_transforms(
         augmentation_config=augmentation_config,
@@ -54,6 +55,7 @@ def create_detection_dataloaders(
         shuffle=shuffle_train,
         num_workers=num_workers,
         collate_fn=detection_collate_fn,
+        drop_last=drop_last_train,
     )
 
     val_loader = DataLoader(

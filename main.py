@@ -26,6 +26,11 @@ def train_model(model_name):
 
         return train_retinanet()
 
+    if model_name == "ssd":
+        from src.training.train_ssd import train_ssd
+
+        return train_ssd()
+
     raise NotImplementedError(
         f"Training for model '{model_name}' is not implemented yet"
     )
@@ -51,6 +56,11 @@ def evaluate_model(model_name):
         from src.evaluation.retinanet import evaluate_retinanet
 
         return evaluate_retinanet()
+
+    if model_name == "ssd":
+        from src.evaluation.ssd import evaluate_ssd
+
+        return evaluate_ssd()
 
     raise NotImplementedError(
         f"Evaluation for model '{model_name}' is not implemented yet"
