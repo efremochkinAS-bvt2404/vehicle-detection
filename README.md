@@ -129,7 +129,7 @@ results/comparison/comparison_001/
 Сравнение всех запусков одной модели:
 
 ```powershell
-python main.py compare-runs --model yolo
+python main.py compare-runs --model <model_name>
 ```
 
 Результаты сохраняются в:
