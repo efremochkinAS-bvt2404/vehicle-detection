@@ -21,6 +21,7 @@ from src.utils.experiment_manager import (
     save_experiment_info,
     save_metrics,
 )
+from src.utils.optimizers import build_optimizer
 from src.utils.paths import (
     FILTERED_IMAGES_DIR,
     TRAIN_MANIFEST_PATH,
@@ -226,6 +227,8 @@ def train_detr(verbose=True):
     learning_rate = training_config["learning_rate"]
     backbone_learning_rate = training_config.get("backbone_learning_rate", learning_rate)
     weight_decay = training_config["weight_decay"]
+    optimizer_name = training_config.get("optimizer", "AdamW")
+    momentum = training_config.get("momentum", 0.9)
     gradient_clip_norm = training_config.get("gradient_clip_norm")
     seed = training_config.get("seed")
     deterministic = training_config.get("deterministic", False)
@@ -252,9 +255,11 @@ def train_detr(verbose=True):
         print(f"Batch size: {batch_size}", flush=True)
         print(f"Workers: {workers}", flush=True)
         print(f"Device: {device}", flush=True)
+        print(f"Optimizer: {optimizer_name}", flush=True)
         print(f"Learning rate: {learning_rate}", flush=True)
         print(f"Backbone learning rate: {backbone_learning_rate}", flush=True)
         print(f"Gradient clip norm: {gradient_clip_norm}", flush=True)
+        print(f"Momentum: {momentum}", flush=True)
         print(f"Seed: {seed}", flush=True)
         print(f"Max train batches: {max_train_batches}", flush=True)
         print(f"Max val batches: {max_val_batches}", flush=True)
@@ -281,12 +286,15 @@ def train_detr(verbose=True):
         else:
             other_parameters.append(parameter)
 
-    optimizer = torch.optim.AdamW(
+    optimizer = build_optimizer(
         [
             {"params": other_parameters, "lr": learning_rate},
             {"params": backbone_parameters, "lr": backbone_learning_rate},
         ],
+        name=optimizer_name,
+        lr=learning_rate,
         weight_decay=weight_decay,
+        momentum=momentum,
     )
 
     history = []
@@ -398,9 +406,11 @@ def train_detr(verbose=True):
         "batch_size": batch_size,
         "workers": workers,
         "device": str(device),
+        "optimizer": optimizer_name,
         "learning_rate": learning_rate,
         "backbone_learning_rate": backbone_learning_rate,
         "weight_decay": weight_decay,
+        "momentum": momentum,
         "gradient_clip_norm": gradient_clip_norm,
         "seed": seed,
         "deterministic": deterministic,
@@ -427,6 +437,11 @@ def train_detr(verbose=True):
             "image_size": training_config["image_size"],
             "batch_size": batch_size,
             "device": str(device),
+            "optimizer": optimizer_name,
+            "learning_rate": learning_rate,
+            "backbone_learning_rate": backbone_learning_rate,
+            "weight_decay": weight_decay,
+            "momentum": momentum,
             "best_checkpoint": relative_path(experiment.checkpoints_dir / "best.pt"),
             "last_checkpoint": relative_path(experiment.checkpoints_dir / "last.pt"),
         },

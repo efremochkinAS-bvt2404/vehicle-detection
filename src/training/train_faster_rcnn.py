@@ -19,6 +19,7 @@ from src.utils.experiment_manager import (
     save_metrics,
     relative_path,
 )
+from src.utils.optimizers import build_optimizer
 from src.utils.paths import TRAIN_MANIFEST_PATH
 from src.utils.plotting import plot_training_history
 
@@ -131,6 +132,8 @@ def train_faster_rcnn(verbose=True):
     workers = training_config["workers"]
     learning_rate = training_config["learning_rate"]
     weight_decay = training_config["weight_decay"]
+    optimizer_name = training_config.get("optimizer", "AdamW")
+    momentum = training_config.get("momentum", 0.9)
     seed = training_config.get("seed")
     deterministic = training_config.get("deterministic", False)
     max_train_batches = training_config.get("max_train_batches")
@@ -164,6 +167,10 @@ def train_faster_rcnn(verbose=True):
         print(f"Device: {device}")
         print(f"Seed: {seed}")
         print(f"Deterministic: {deterministic}")
+        print(f"Optimizer: {optimizer_name}")
+        print(f"Learning rate: {learning_rate}")
+        print(f"Weight decay: {weight_decay}")
+        print(f"Momentum: {momentum}")
         print(f"Max train batches: {max_train_batches}")
         print(f"Max val batches: {max_val_batches}")
         print("=" * 50)
@@ -174,10 +181,12 @@ def train_faster_rcnn(verbose=True):
     )
     model.to(device)
 
-    optimizer = torch.optim.AdamW(
+    optimizer = build_optimizer(
         [parameter for parameter in model.parameters() if parameter.requires_grad],
+        name=optimizer_name,
         lr=learning_rate,
         weight_decay=weight_decay,
+        momentum=momentum,
     )
 
     history = []
@@ -270,8 +279,10 @@ def train_faster_rcnn(verbose=True):
         "batch_size": batch_size,
         "workers": workers,
         "device": str(device),
+        "optimizer": optimizer_name,
         "learning_rate": learning_rate,
         "weight_decay": weight_decay,
+        "momentum": momentum,
         "seed": seed,
         "deterministic": deterministic,
         "max_train_batches": max_train_batches,
@@ -298,6 +309,10 @@ def train_faster_rcnn(verbose=True):
             "image_size": training_config["image_size"],
             "batch_size": batch_size,
             "device": str(device),
+            "optimizer": optimizer_name,
+            "learning_rate": learning_rate,
+            "weight_decay": weight_decay,
+            "momentum": momentum,
             "best_checkpoint": str(experiment.checkpoints_dir / "best.pt"),
             "last_checkpoint": str(experiment.checkpoints_dir / "last.pt"),
         },

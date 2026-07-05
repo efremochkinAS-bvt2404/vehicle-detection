@@ -2,6 +2,7 @@ import csv
 import json
 import math
 from pathlib import Path
+import re
 import textwrap
 import time
 
@@ -23,7 +24,6 @@ PERFORMANCE_CACHE_PATH = COMPARISON_DIR / "performance_cache.json"
 
 METRIC_COLUMNS = [
     "model",
-    "mAP",
     "mAP@50",
     "mAP@50:95",
     "Precision",
@@ -45,6 +45,7 @@ HYPERPARAMETER_COLUMNS = [
     "workers",
     "learning_rate",
     "weight_decay",
+    "momentum",
     "optimizer",
 ]
 
@@ -89,6 +90,30 @@ def _write_csv(path, rows, columns):
         ])
 
     return path
+
+
+def _write_excel_csv(path, rows, columns):
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    with path.open("w", encoding="utf-8-sig", newline="") as file:
+        file.write("sep=;\n")
+        writer = csv.DictWriter(file, fieldnames=columns, delimiter=";")
+        writer.writeheader()
+        writer.writerows([
+            {column: _format_excel_csv_value(row.get(column, "")) for column in columns}
+            for row in rows
+        ])
+
+    return path
+
+
+def _format_excel_csv_value(value):
+    text = _format_value(value)
+
+    if re.fullmatch(r"-?\d+\.\d+(e[-+]?\d+)?", text, flags=re.IGNORECASE):
+        return text.replace(".", ",")
+
+    return text
 
 
 def _to_float(value):
@@ -235,7 +260,66 @@ def _infer_yolo_auto_optimizer(info, training_config):
         return "AdamW"
 
     iterations = math.ceil(train_size / max(batch_size, nominal_batch_size)) * epochs
-    return "MuSGD" if iterations > 10000 else "AdamW"
+    return "SGD" if iterations > 10000 else "AdamW"
+
+
+def _infer_yolo_auto_learning_rate(info, training_config):
+    classes = (
+        _get_nested(info, "config", "classes", "keep")
+        or training_config.get("classes")
+        or []
+    )
+    num_classes = len(classes) if isinstance(classes, list) else 0
+
+    if num_classes <= 0:
+        return None
+
+    return round(0.002 * 5 / (4 + num_classes), 6)
+
+
+def _infer_yolo_history_learning_rate(history):
+    values = []
+
+    for row in history:
+        value = _to_float(row.get("lr/pg0"))
+        if value is not None:
+            values.append(value)
+
+    if not values:
+        return None
+
+    # Ultralytics stores scheduled per-epoch learning rates in history.csv.
+    # lr/pg0 is the main parameter group; lr/pg2 may include bias warm-up.
+    # The maximum value is the closest recorded value to the configured lr0.
+    return round(max(values), 6)
+
+
+def _infer_yolo_default_learning_rate(optimizer):
+    optimizer_name = str(optimizer or "").lower()
+
+    if optimizer_name in {"sgd", "musgd"}:
+        return 0.01
+
+    if optimizer_name in {"adam", "adamw"}:
+        return 0.001
+
+    return None
+
+
+def _infer_yolo_weight_decay(weight_decay):
+    if weight_decay is not None:
+        return weight_decay
+
+    # Ultralytics default.yaml uses this value for the decayed parameter group.
+    return 0.0005
+
+
+def _infer_yolo_momentum(momentum):
+    if momentum is not None:
+        return momentum
+
+    # Ultralytics default.yaml uses momentum=0.937.
+    return 0.937
 
 
 def _best_checkpoint_path(model_name, run_dir):
@@ -466,16 +550,30 @@ def _collect_run(model_name, run_dir, performance_cache=None):
 
     learning_rate = info.get("learning_rate", training_config.get("learning_rate"))
     weight_decay = info.get("weight_decay", training_config.get("weight_decay"))
+    momentum = info.get("momentum", training_config.get("momentum"))
     optimizer = (
         info.get("optimizer")
         or training_config.get("optimizer")
         or OPTIMIZER_BY_MODEL.get(model_name, "")
     )
 
-    if model_name == "yolo" and optimizer == "auto":
+    if model_name == "yolo" and str(optimizer).lower() == "auto":
         optimizer = _infer_yolo_auto_optimizer(info, training_config)
-        learning_rate = learning_rate if learning_rate is not None else "auto"
-        weight_decay = weight_decay if weight_decay is not None else "auto"
+        learning_rate = (
+            learning_rate
+            if learning_rate is not None
+            else _infer_yolo_auto_learning_rate(info, training_config)
+        )
+        weight_decay = _infer_yolo_weight_decay(weight_decay)
+
+    if model_name == "yolo":
+        if learning_rate is None:
+            learning_rate = (
+                _infer_yolo_default_learning_rate(optimizer)
+                or _infer_yolo_history_learning_rate(history)
+            )
+        weight_decay = _infer_yolo_weight_decay(weight_decay)
+        momentum = _infer_yolo_momentum(momentum)
 
     metric_row = {
         "model": model_name,
@@ -504,6 +602,7 @@ def _collect_run(model_name, run_dir, performance_cache=None):
         "device": info.get("device", training_config.get("device")),
         "learning_rate": learning_rate,
         "weight_decay": weight_decay,
+        "momentum": momentum,
         "optimizer": optimizer,
     }
 
@@ -641,6 +740,7 @@ def _line_chart(path, runs, key, title, ylabel, fallback_key=None):
     series_specs = {
         "train_loss": (["train_loss", "train/box_loss", "train/cls_loss", "train/dfl_loss"], True),
         "val_loss": (["val_loss", "val/box_loss", "val/cls_loss", "val/dfl_loss"], True),
+        "map": (["map", "mAP", "map50_95", "mAP50-95", "metrics/mAP50-95(B)"], False),
         "map50": (["map50", "mAP50", "metrics/mAP50(B)"], False),
         "map50_95": (["map50_95", "mAP50-95", "metrics/mAP50-95(B)"], False),
         "precision": (["precision", "metrics/precision(B)"], False),
@@ -651,8 +751,27 @@ def _line_chart(path, runs, key, title, ylabel, fallback_key=None):
     plotted = False
 
     for run in runs:
-        columns, sum_columns = series_specs[key]
-        values = _history_column(run["history"], columns, sum_columns=sum_columns)
+        if key == "f1":
+            precision_values = _history_column(
+                run["history"],
+                series_specs["precision"][0],
+                sum_columns=False,
+            )
+            recall_values = _history_column(
+                run["history"],
+                series_specs["recall"][0],
+                sum_columns=False,
+            )
+            values = []
+
+            for precision, recall in zip(precision_values, recall_values):
+                if precision is None or recall is None or precision + recall == 0:
+                    values.append(None)
+                else:
+                    values.append(2 * precision * recall / (precision + recall))
+        else:
+            columns, sum_columns = series_specs[key]
+            values = _history_column(run["history"], columns, sum_columns=sum_columns)
 
         if not any(value is not None for value in values) and fallback_key:
             columns, sum_columns = series_specs[fallback_key]
@@ -678,6 +797,97 @@ def _line_chart(path, runs, key, title, ylabel, fallback_key=None):
     plt.savefig(path, dpi=300)
     plt.close()
     return path
+
+
+def _parameter_quality_charts(output_dir, runs):
+    import matplotlib.pyplot as plt
+
+    parameter_specs = [
+        ("epochs", "epochs", "Epochs"),
+        ("batch_size", "batch_size", "Batch size"),
+        ("image_size", "image_size", "Image size"),
+        ("learning_rate", "learning_rate", "Learning rate"),
+        ("weight_decay", "weight_decay", "Weight decay"),
+    ]
+    metric_specs = [
+        ("mAP@50", "mAP@50"),
+        ("F1-score", "F1-score"),
+    ]
+    graph_paths = []
+
+    for parameter_key, file_suffix, xlabel in parameter_specs:
+        points = []
+
+        for run in runs:
+            x_value = _to_float(run["hyperparameter_row"].get(parameter_key))
+            if x_value is None:
+                continue
+
+            y_values = {
+                metric_label: _to_float(run["metric_row"].get(metric_key))
+                for metric_key, metric_label in metric_specs
+            }
+            y_values = {
+                metric_label: value
+                for metric_label, value in y_values.items()
+                if value is not None
+            }
+
+            if not y_values:
+                continue
+
+            points.append((x_value, run["model"], y_values))
+
+        unique_x_values = {point[0] for point in points}
+        if len(points) < 2 or len(unique_x_values) < 2:
+            continue
+
+        points.sort(key=lambda point: (point[0], point[1]))
+
+        plt.figure(figsize=(10, 6))
+        for metric_label in [label for _, label in metric_specs]:
+            x_values = [
+                x_value
+                for x_value, _, y_values in points
+                if metric_label in y_values
+            ]
+            y_values = [
+                y_values[metric_label]
+                for _, _, y_values in points
+                if metric_label in y_values
+            ]
+
+            if not y_values:
+                continue
+
+            plt.plot(x_values, y_values, marker="o", label=metric_label)
+
+        for x_value, model_name, y_values in points:
+            y_value = y_values.get("mAP@50")
+            if y_value is None:
+                y_value = next(iter(y_values.values()))
+            plt.annotate(
+                model_name,
+                (x_value, y_value),
+                textcoords="offset points",
+                xytext=(5, 6),
+                fontsize=8,
+            )
+
+        plt.title(f"Quality Metrics by {xlabel}")
+        plt.xlabel(xlabel)
+        plt.ylabel("Score")
+        plt.ylim(0, 1)
+        plt.grid(True, linestyle="--", alpha=0.35)
+        plt.legend()
+        plt.tight_layout()
+
+        path = output_dir / f"quality_by_{file_suffix}.png"
+        plt.savefig(path, dpi=300)
+        plt.close()
+        graph_paths.append(path)
+
+    return graph_paths
 
 
 def _radar_chart(path, rows):
@@ -902,6 +1112,11 @@ def _build_comparison_outputs(output_dir, runs, title_prefix, summary_writer, re
 
     table_paths = [
         _write_csv(output_dir / "comparison_metrics.csv", metric_rows, METRIC_COLUMNS),
+        _write_excel_csv(
+            output_dir / "comparison_metrics_excel.csv",
+            metric_rows,
+            METRIC_COLUMNS,
+        ),
         _save_table_png(
             output_dir / "comparison_metrics_table.png",
             metric_rows,
@@ -910,6 +1125,11 @@ def _build_comparison_outputs(output_dir, runs, title_prefix, summary_writer, re
         ),
         _write_csv(
             output_dir / f"comparison_{TRAINING_CONFIGURATION_FILE}.csv",
+            hyperparameter_rows,
+            HYPERPARAMETER_COLUMNS,
+        ),
+        _write_excel_csv(
+            output_dir / f"comparison_{TRAINING_CONFIGURATION_FILE}_excel.csv",
             hyperparameter_rows,
             HYPERPARAMETER_COLUMNS,
         ),
@@ -923,7 +1143,6 @@ def _build_comparison_outputs(output_dir, runs, title_prefix, summary_writer, re
 
     graph_paths = []
     graph_specs = [
-        ("bar_map.png", "mAP", "mAP", "mAP"),
         ("bar_map50.png", "mAP@50", "mAP@50", "mAP@50"),
         ("bar_map50_95.png", "mAP@50:95", "mAP@50:95", "mAP@50:95"),
         ("bar_precision.png", "Precision", "Precision", "Precision"),
@@ -960,11 +1179,12 @@ def _build_comparison_outputs(output_dir, runs, title_prefix, summary_writer, re
         ("line_map50_95.png", "map50_95", "mAP@50:95 by Epoch", "mAP@50:95", None),
         ("line_precision.png", "precision", "Precision by Epoch", "Precision", None),
         ("line_recall.png", "recall", "Recall by Epoch", "Recall", None),
+        ("line_f1.png", "f1", "F1-score by Epoch", "F1-score", None),
         (
             "line_loss_all_models.png",
             "val_loss",
-            "Loss by Epoch",
-            "Validation loss or train loss",
+            "Validation Loss by Epoch",
+            "Validation loss (train loss fallback)",
             "train_loss",
         ),
         (
@@ -987,6 +1207,8 @@ def _build_comparison_outputs(output_dir, runs, title_prefix, summary_writer, re
         )
         if path is not None:
             graph_paths.append(path)
+
+    graph_paths.extend(_parameter_quality_charts(output_dir, runs))
 
     graph_paths.append(_radar_chart(output_dir / "radar_quality_metrics.png", metric_rows))
 
@@ -1012,6 +1234,7 @@ def _build_comparison_outputs(output_dir, runs, title_prefix, summary_writer, re
 
 def compare_models(verbose=True):
     COMPARISON_DIR.mkdir(parents=True, exist_ok=True)
+    output_dir = _next_numbered_dir(COMPARISON_DIR)
     performance_cache = _load_performance_cache()
 
     runs = []
@@ -1022,7 +1245,7 @@ def compare_models(verbose=True):
         runs.append(_collect_run(model_name, run_dir, performance_cache=performance_cache))
 
     outputs = _build_comparison_outputs(
-        output_dir=COMPARISON_DIR,
+        output_dir=output_dir,
         runs=runs,
         title_prefix="Comparison",
         summary_writer=_write_summary,
@@ -1035,12 +1258,12 @@ def compare_models(verbose=True):
         print("Model comparison completed", flush=True)
         print("=" * 50, flush=True)
         print(f"Compared models: {', '.join(summary['models_compared'])}", flush=True)
-        print(f"Output directory: {COMPARISON_DIR}", flush=True)
+        print(f"Output directory: {output_dir}", flush=True)
         print(f"Summary: {outputs['summary_path']}", flush=True)
         print(f"Report: {outputs['report_path']}", flush=True)
         print("=" * 50, flush=True)
 
-    return COMPARISON_DIR
+    return output_dir
 
 
 def _model_alias(model_name, index):

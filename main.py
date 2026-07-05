@@ -89,6 +89,14 @@ def main():
     parser = argparse.ArgumentParser(
         description="Vehicle detection on KITTI"
     )
+    parser.add_argument(
+        "--model",
+        choices=MODEL_NAMES,
+        help=(
+            "Train selected model. This is a shortcut for "
+            "'train --model <model>'."
+        ),
+    )
 
     subparsers = parser.add_subparsers(dest="command")
 
@@ -154,6 +162,9 @@ def main():
     )
 
     args = parser.parse_args()
+
+    if not hasattr(args, "handler") and args.model:
+        args.handler = lambda parsed_args: train_model(parsed_args.model)
 
     if not hasattr(args, "handler"):
         parser.print_help()

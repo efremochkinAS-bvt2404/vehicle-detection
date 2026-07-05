@@ -45,7 +45,6 @@ preprocessing:
 augmentation:
   horizontal_flip: true
   color_jitter: true
-  random_crop: false
 
 evaluation:
   metrics:

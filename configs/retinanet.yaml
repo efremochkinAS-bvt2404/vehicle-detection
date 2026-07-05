@@ -6,13 +6,15 @@ model:
   pretrained: true
 
 training:
-  epochs: 8
+  epochs: 1
   batch_size: 2
   image_size: 640
   workers: 2
   device: 0
+  optimizer: AdamW
   learning_rate: 0.0005
   weight_decay: 0.0005
+  momentum: 0.9
   seed: 42
   deterministic: true
   max_train_batches: null
@@ -22,7 +24,6 @@ training:
 augmentation:
   horizontal_flip: true
   color_jitter: true
-  random_crop: false
 
 evaluation:
   visualization_confidence_threshold: 0.5

@@ -20,6 +20,7 @@ from src.utils.experiment_manager import (
     save_experiment_info,
     save_metrics,
 )
+from src.utils.optimizers import build_optimizer
 from src.utils.paths import TRAIN_MANIFEST_PATH
 from src.utils.plotting import plot_training_history
 
@@ -167,6 +168,8 @@ def train_ssd(verbose=True):
     workers = training_config["workers"]
     learning_rate = training_config["learning_rate"]
     weight_decay = training_config["weight_decay"]
+    optimizer_name = training_config.get("optimizer", "AdamW")
+    momentum = training_config.get("momentum", 0.9)
     seed = training_config.get("seed")
     deterministic = training_config.get("deterministic", False)
     max_train_batches = training_config.get("max_train_batches")
@@ -200,6 +203,10 @@ def train_ssd(verbose=True):
         print(f"Batch size: {batch_size}", flush=True)
         print(f"Workers: {workers}", flush=True)
         print(f"Device: {device}", flush=True)
+        print(f"Optimizer: {optimizer_name}", flush=True)
+        print(f"Learning rate: {learning_rate}", flush=True)
+        print(f"Weight decay: {weight_decay}", flush=True)
+        print(f"Momentum: {momentum}", flush=True)
         print(f"Seed: {seed}", flush=True)
         print(f"Deterministic: {deterministic}", flush=True)
         print(f"Max train batches: {max_train_batches}", flush=True)
@@ -212,10 +219,12 @@ def train_ssd(verbose=True):
     )
     model.to(device)
 
-    optimizer = torch.optim.AdamW(
+    optimizer = build_optimizer(
         [parameter for parameter in model.parameters() if parameter.requires_grad],
+        name=optimizer_name,
         lr=learning_rate,
         weight_decay=weight_decay,
+        momentum=momentum,
     )
 
     history = []
@@ -322,8 +331,10 @@ def train_ssd(verbose=True):
         "batch_size": batch_size,
         "workers": workers,
         "device": str(device),
+        "optimizer": optimizer_name,
         "learning_rate": learning_rate,
         "weight_decay": weight_decay,
+        "momentum": momentum,
         "seed": seed,
         "deterministic": deterministic,
         "max_train_batches": max_train_batches,
@@ -350,6 +361,10 @@ def train_ssd(verbose=True):
             "image_size": training_config["image_size"],
             "batch_size": batch_size,
             "device": str(device),
+            "optimizer": optimizer_name,
+            "learning_rate": learning_rate,
+            "weight_decay": weight_decay,
+            "momentum": momentum,
             "best_checkpoint": relative_path(experiment.checkpoints_dir / "best.pt"),
             "last_checkpoint": relative_path(experiment.checkpoints_dir / "last.pt"),
         },

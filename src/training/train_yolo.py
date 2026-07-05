@@ -38,6 +38,10 @@ def train_yolo(verbose=True):
     patience = training_config.get("patience")
     seed = training_config.get("seed")
     deterministic = training_config.get("deterministic")
+    optimizer = training_config.get("optimizer")
+    learning_rate = training_config.get("learning_rate")
+    weight_decay = training_config.get("weight_decay")
+    momentum = training_config.get("momentum")
 
     checkpoint_path = ensure_yolo_checkpoint()
 
@@ -63,6 +67,10 @@ def train_yolo(verbose=True):
         print(f"Max minutes: {max_minutes}")
         print(f"Seed: {seed}")
         print(f"Deterministic: {deterministic}")
+        print(f"Optimizer: {optimizer}")
+        print(f"Learning rate: {learning_rate}")
+        print(f"Weight decay: {weight_decay}")
+        print(f"Momentum: {momentum}")
         print("=" * 50)
 
     model = YOLO(str(checkpoint_path))
@@ -94,6 +102,18 @@ def train_yolo(verbose=True):
 
     if patience is not None:
         train_kwargs["patience"] = patience
+
+    if optimizer is not None:
+        train_kwargs["optimizer"] = optimizer
+
+    if learning_rate is not None:
+        train_kwargs["lr0"] = learning_rate
+
+    if weight_decay is not None:
+        train_kwargs["weight_decay"] = weight_decay
+
+    if momentum is not None:
+        train_kwargs["momentum"] = momentum
 
     results = model.train(**train_kwargs)
 
@@ -144,6 +164,10 @@ def train_yolo(verbose=True):
         "patience": patience,
         "seed": seed,
         "deterministic": deterministic,
+        "optimizer": optimizer,
+        "learning_rate": learning_rate,
+        "weight_decay": weight_decay,
+        "momentum": momentum,
         "config": config,
         "pretrained_checkpoint": relative_path(checkpoint_path),
         "data_yaml": relative_path(YOLO_DATA_YAML_PATH),
@@ -169,6 +193,10 @@ def train_yolo(verbose=True):
             "device": device,
             "seed": seed,
             "deterministic": deterministic,
+            "optimizer": optimizer,
+            "learning_rate": learning_rate,
+            "weight_decay": weight_decay,
+            "momentum": momentum,
             "best_checkpoint": relative_path(best_checkpoint),
             "last_checkpoint": relative_path(last_checkpoint) if last_checkpoint else "",
         },

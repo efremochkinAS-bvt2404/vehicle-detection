@@ -5,7 +5,7 @@ model:
   pretrained_checkpoint: yolo11n.pt
 
 training:
-  epochs: 8
+  epochs: 3
   batch_size: 8
   image_size: 640
   workers: 2
@@ -13,6 +13,7 @@ training:
   optimizer: auto
   learning_rate: null
   weight_decay: null
+  momentum: null
   fraction: 1.0
   max_minutes: null
   patience: 10
@@ -22,7 +23,6 @@ training:
 augmentation:
   horizontal_flip: true
   color_jitter: true
-  random_crop: false
 
 results:
   experiment_prefix: yolo

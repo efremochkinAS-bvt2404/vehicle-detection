@@ -7,13 +7,15 @@ model:
 
 training:
   epochs: 8
-  batch_size: 2
-  image_size: 640
+  batch_size: 4
+  image_size: 512
   workers: 2
   device: 0
+  optimizer: AdamW
   learning_rate: 0.00005
   backbone_learning_rate: 0.00001
   weight_decay: 0.0001
+  momentum: 0.9
   gradient_clip_norm: 0.1
   seed: 42
   deterministic: true
@@ -24,7 +26,6 @@ training:
 augmentation:
   horizontal_flip: true
   color_jitter: true
-  random_crop: false
 
 results:
   experiment_prefix: detr

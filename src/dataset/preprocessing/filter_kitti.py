@@ -4,7 +4,7 @@ import shutil
 
 import matplotlib.pyplot as plt
 
-from configs.loader import KEEP_CLASSES, CLASS_NAMES_RU
+from configs.loader import KEEP_CLASSES
 from src.utils.paths import (
     KITTI_IMAGES_DIR,
     KITTI_LABELS_DIR,
@@ -30,15 +30,15 @@ def is_valid_kitti_line(parts):
 
 def filter_kitti():
     if not KITTI_IMAGES_DIR.exists():
-        raise FileNotFoundError(f"Папка изображений не найдена: {KITTI_IMAGES_DIR}")
+        raise FileNotFoundError(f"Images directory not found: {KITTI_IMAGES_DIR}")
 
     if not KITTI_LABELS_DIR.exists():
-        raise FileNotFoundError(f"Папка разметки не найдена: {KITTI_LABELS_DIR}")
+        raise FileNotFoundError(f"Labels directory not found: {KITTI_LABELS_DIR}")
 
     label_files = sorted(KITTI_LABELS_DIR.glob("*.txt"))
 
     if not label_files:
-        raise FileNotFoundError(f"Файлы разметки не найдены: {KITTI_LABELS_DIR}")
+        raise FileNotFoundError(f"No label files found: {KITTI_LABELS_DIR}")
 
     prepare_dirs()
 
@@ -124,24 +124,39 @@ def save_filter_results(stats):
     with metrics_path.open("w", encoding="utf-8") as file:
         json.dump(stats, file, ensure_ascii=False, indent=4)
 
-    class_names = [
-        CLASS_NAMES_RU.get(class_name, class_name)
-        for class_name in stats["classes"].keys()
-    ]
+    class_names = list(stats["classes"].keys())
     class_counts = list(stats["classes"].values())
 
-    plt.rcParams["font.family"] = "DejaVu Sans"
+    figure, axis = plt.subplots(figsize=(14, 8))
+    bars = axis.bar(class_names, class_counts, color="#59a14f")
 
-    plt.figure(figsize=(10, 6))
-    plt.bar(class_names, class_counts)
-    plt.title("Распределение объектов после фильтрации")
-    plt.xlabel("Класс")
-    plt.ylabel("Количество объектов")
-    plt.xticks(rotation=30, ha="right")
-    plt.grid(axis="y", linestyle="--", alpha=0.4)
-    plt.tight_layout()
-    plt.savefig(plot_path, dpi=300)
-    plt.close()
+    axis.set_title(
+        "Filtered KITTI Class Distribution",
+        fontsize=24,
+        fontweight="bold",
+        pad=28,
+    )
+    axis.set_xlabel("Class", fontsize=18, labelpad=16)
+    axis.set_ylabel("Objects", fontsize=18, labelpad=16)
+    axis.tick_params(axis="x", labelrotation=25, labelsize=16)
+    axis.tick_params(axis="y", labelsize=15)
+    axis.grid(axis="y", linestyle="--", alpha=0.4)
+
+    max_count = max(class_counts) if class_counts else 0
+    axis.set_ylim(0, max_count * 1.16 if max_count else 1)
+    for bar, value in zip(bars, class_counts):
+        axis.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            str(value),
+            ha="center",
+            va="bottom",
+            fontsize=14,
+        )
+
+    figure.tight_layout(pad=2.5)
+    figure.savefig(plot_path, dpi=300)
+    plt.close(figure)
 
     return metrics_path, plot_path
 

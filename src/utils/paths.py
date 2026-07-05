@@ -119,6 +119,7 @@ KITTI_PLOTS_DIR = PLOTS_DIR / "kitti"
 
 FILTERED_KITTI_METRICS_DIR = METRICS_DIR / "filtered_kitti"
 FILTERED_KITTI_PLOTS_DIR = PLOTS_DIR / "filtered_kitti"
+DATASET_SPLIT_PLOTS_DIR = PLOTS_DIR / "dataset" / "splits"
 
 
 # =============================================================================

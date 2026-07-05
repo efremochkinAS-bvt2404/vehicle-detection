@@ -27,6 +27,14 @@ def prepare_dataset(force=False):
         status = get_dataset_status()
 
         if status["prepared"]:
+            from src.dataset.visualization.visualize_splits import (
+                visualize_split_statistics,
+            )
+
+            run_step(
+                "Creating dataset split visualizations",
+                visualize_split_statistics,
+            )
             marker_path = save_preparation_status(status)
             print("Prepared dataset found. Skipping dataset preparation.")
             print(f"Preparation marker: {marker_path}")
@@ -39,6 +47,7 @@ def prepare_dataset(force=False):
     from src.dataset.preprocessing.filter_kitti import filter_kitti
     from src.dataset.validation.validate_filtered_kitti import validate_filtered_kitti
     from src.dataset.converters.create_manifest import create_manifests
+    from src.dataset.visualization.visualize_splits import visualize_split_statistics
     from src.dataset.visualization.visualize_manifest import visualize_manifest
     from src.dataset.converters.manifest_to_yolo import convert_manifest_to_yolo
     from src.dataset.pytorch.check_dataloader import check_dataloaders
@@ -47,9 +56,10 @@ def prepare_dataset(force=False):
     run_step("2. Filtering KITTI dataset", filter_kitti)
     run_step("3. Validating filtered KITTI dataset", validate_filtered_kitti)
     run_step("4. Creating detection manifests", create_manifests)
-    run_step("5. Creating manifest visualizations", visualize_manifest)
-    run_step("6. Converting manifest to YOLO format", convert_manifest_to_yolo)
-    run_step("7. Checking PyTorch DataLoaders", check_dataloaders)
+    run_step("5. Creating dataset split visualizations", visualize_split_statistics)
+    run_step("6. Creating manifest visualizations", visualize_manifest)
+    run_step("7. Converting manifest to YOLO format", convert_manifest_to_yolo)
+    run_step("8. Checking PyTorch DataLoaders", check_dataloaders)
 
     status = get_dataset_status()
     marker_path = save_preparation_status(status)
