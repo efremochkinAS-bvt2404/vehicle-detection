@@ -8,7 +8,7 @@ model:
 training:
   epochs: 8
   batch_size: 2
-  image_size: 512
+  image_size: 640
   workers: 2
   device: 0
   optimizer: AdamW
